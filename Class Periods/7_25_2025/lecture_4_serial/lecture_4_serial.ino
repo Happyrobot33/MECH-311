@@ -9,7 +9,7 @@ void setup() {
   // store data in a variable
   int Val = Serial.parseInt();
   // print out the response
-  Serial.println(Val);
+  Serial.println("This is the " + String(Val) + " class explaining programming concepts that I have taken.");
 }
 
 void loop() {
