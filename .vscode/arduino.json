@@ -1,0 +1,6 @@
+{
+    "sketch": "Class Periods\\7_25_2025\\lecture_4_serial\\lecture_4_serial.ino",
+    "board": "arduino:avr:uno",
+    "port": "COM6",
+    "programmer": "arduinoisp"
+}
