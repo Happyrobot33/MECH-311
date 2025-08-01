@@ -1,20 +1,17 @@
 //uncomment this to enable tests
 #define tests
 
+const int MAX_VALUE = 10; //maximum value for a
+const int MIN_VALUE = 0; //minimum value for a
+
 void setup() {
   // Initialize serial communication
   Serial.begin(9600);
-
-#ifdef tests
-    Serial.println("----TESTS ENABLED----");
-#endif
 
   Serial.println("Math equation to compute is {4 * A - 20} = B");
 
   int A = -100; //start with a invalid value
 
-  const int MAX_VALUE = 10; //maximum value for a
-  const int MIN_VALUE = 0; //minimum value for a
 
   while (A < MIN_VALUE || A > MAX_VALUE)
   {
@@ -50,32 +47,18 @@ String numberToStr(int num)
     //absolute the value
     int absNum = abs(num);
 
-    switch(absNum) //we do this to avoid duplicate cases
+    //cant be string array, C++ will NOT let it work
+    const char* words[10] = {"zero", " one", " two", " three", " four", " five", " six", " seven", " eight", " nine"};
+
+    //return words[9];
+
+    if (absNum < MAX_VALUE && absNum >= MIN_VALUE)
     {
-        //breaks arent needed due to returns
-        case 0:
-            return "zero";
-        case 1:
-            return getSignedness(num) + " one";
-        case 2:
-            return getSignedness(num) + " two";
-        case 3:
-            return getSignedness(num) + " three";
-        case 4:
-            return getSignedness(num) + " four";
-        case 5:
-            return getSignedness(num) + " five";
-        case 6:
-            return getSignedness(num) + " six";
-        case 7:
-            return getSignedness(num) + " seven";
-        case 8:
-            return getSignedness(num) + " eight";
-        case 9:
-            return getSignedness(num) + " nine";
-        default: //doesnt match, in this case handling larger than 9
-            return String(num);
+        //the space being here is NECCESARY or stuff breaks because C++ is stupid
+        String message = getSignedness(num) + words[absNum];
+        return message;
     }
+    return String(num);
 }
 
 String getSignedness(int num)
@@ -88,6 +71,8 @@ String getSignedness(int num)
     {
         return "negative";
     }
+
+    return "";
 }
 
 void loop() {
