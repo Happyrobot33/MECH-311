@@ -1,5 +1,5 @@
 //uncomment this to enable tests
-#define tests
+//#define tests
 
 const int MAX_VALUE = 10; //maximum value for a
 const int MIN_VALUE = 0; //minimum value for a
