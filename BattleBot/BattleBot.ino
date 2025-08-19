@@ -1,4 +1,5 @@
 #include <SparkFun_TB6612.h>
+#include <Servo.h>
 
 const int LEFT_MOTOR_IN1 = 4;
 const int LEFT_MOTOR_IN2 = 5;
@@ -17,20 +18,47 @@ Motor rightMotor(RIGHT_MOTOR_IN1, RIGHT_MOTOR_IN2, RIGHT_MOTOR_PWM, RIGHT_MOTOR_
 
 const int LIGHT_SENSOR_PIN = A0; // Analog pin for light sensor
 
+const int SERVO_PIN = 10;
+Servo lightServo;
+
 void setup()
 {
     Serial.begin(115200);
 
     //setup light sensor
     pinMode(LIGHT_SENSOR_PIN, INPUT);
+
+    lightServo.attach(SERVO_PIN);
 }
+
+const int NUM_READINGS = 40; // Number of readings for averaging
+int values[NUM_READINGS];
 
 void loop()
 {
-    //read from the light sensor
-    int lightValue = analogRead(LIGHT_SENSOR_PIN);
-    Serial.print("Light Sensor Value: ");
-    Serial.println(lightValue);
+    ReadInValues();
+}
+
+void ReadInValues()
+{
+    // Read multiple values from the light sensor
+    for (int i = 0; i < NUM_READINGS; i++)
+    {
+        //drive the servo to the scan position
+        long rotation = map(i, 0, NUM_READINGS - 1, 0, 180);
+        lightServo.write(rotation);
+        delay(200);
+        values[i] = analogRead(LIGHT_SENSOR_PIN);
+    }
+
+    //print out the values
+    Serial.print("Light Sensor Readings:");
+    for (int i = 0; i < NUM_READINGS; i++)
+    {
+        Serial.print(" ");
+        Serial.print(values[i]);
+    }
+    Serial.println();
 }
 
 
