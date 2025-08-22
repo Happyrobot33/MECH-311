@@ -21,6 +21,8 @@ const int LIGHT_SENSOR_PIN = A0; // Analog pin for light sensor
 const int SERVO_PIN = 10;
 Servo lightServo;
 
+const char fills[] = {' ', '_', '#', 'A'}; // Characters for visualizing light sensor values
+
 void setup()
 {
     Serial.begin(115200);
@@ -29,6 +31,8 @@ void setup()
     pinMode(LIGHT_SENSOR_PIN, INPUT);
 
     lightServo.attach(SERVO_PIN);
+
+    lightServo.write(180);
 }
 
 const int NUM_READINGS = 40; // Number of readings for averaging
@@ -41,24 +45,83 @@ void loop()
 
 void ReadInValues()
 {
+    //Turn(90, 255); // Initial turn to look for light
+    //Turn(-90, 255);
+    //return;
+
     // Read multiple values from the light sensor
     for (int i = 0; i < NUM_READINGS; i++)
     {
         //drive the servo to the scan position
-        long rotation = map(i, 0, NUM_READINGS - 1, 0, 180);
+        long rotation = map(i, 0, NUM_READINGS - 1, 180, 0);
         lightServo.write(rotation);
-        delay(200);
+        delay(50);
         values[i] = analogRead(LIGHT_SENSOR_PIN);
+    }
+    lightServo.write(180);
+
+    //find the min and max values
+    int minValue;
+    int maxValue;
+    int maxValueAngle;
+    for (int i = 0; i < NUM_READINGS; i++)
+    {
+        if (i == 0 || values[i] < minValue)
+        {
+            minValue = values[i];
+        }
+        if (i == 0 || values[i] > maxValue)
+        {
+            maxValue = values[i];
+            maxValueAngle = map(i, 0, NUM_READINGS - 1, 180, 0);
+        }
     }
 
     //print out the values
     Serial.print("Light Sensor Readings:");
+    Serial.println();
+
+    //remap the values to a range of 0 to 4
     for (int i = 0; i < NUM_READINGS; i++)
     {
-        Serial.print(" ");
-        Serial.print(values[i]);
+        // Normalize the value to a range of 0 to 4
+        values[i] = map(values[i], minValue, maxValue, 0, 3);
+        // Print the visual representation using fills
+        Serial.print(fills[values[i]]);
     }
     Serial.println();
+
+    //print indicators for left, right, and center
+    for (int i = 0; i < NUM_READINGS; i++)
+    {
+        if (i == 0)
+        {
+            Serial.print("L");
+        }
+        else if (i == NUM_READINGS - 1)
+        {
+            Serial.print("R");
+        }
+        else if (i == NUM_READINGS / 2)
+        {
+            Serial.print("C");
+        }
+        else
+        {
+            Serial.print(" ");
+        }
+    }
+
+    Serial.println();
+
+    //remap the max angle to a turn angle
+    int turnAngle = map(maxValueAngle, 0, 180, 90, -90);
+    Turn(turnAngle, 100);
+
+    //drive towards the light
+    Drive(120);
+    delay(500);
+    Stop();
 }
 
 
@@ -72,8 +135,8 @@ void ReadInValues()
 void Turn(int degrees, int speedPct)
 {
 // hand tuned scalar to make the degrees match with the delay
-#define degreesScalar 265
-    int timeDelay = (degreesScalar * abs(degrees)) * (1.0 / speedPct);
+#define degreesScalar 800
+    int timeDelay = (long(degreesScalar) * long(abs(degrees))) * (1.0 / speedPct);
     if (degrees > 0)
     {
         Right(speedPct);
