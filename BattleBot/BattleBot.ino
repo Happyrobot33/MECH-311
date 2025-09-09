@@ -1,3 +1,4 @@
+#include <NewPing.h>
 #include <SparkFun_TB6612.h>
 #include <Servo.h>
 
@@ -21,6 +22,10 @@ const int LIGHT_SENSOR_PIN = A0; // Analog pin for light sensor
 const int SERVO_PIN = 10;
 Servo lightServo;
 
+const int TRG_PIN = 12;
+const int ECHO_PIN = 13;
+NewPing sonar(TRG_PIN, ECHO_PIN, 200);
+
 const char fills[] = {' ', '_', '#', 'A'}; // Characters for visualizing light sensor values
 
 void setup()
@@ -40,7 +45,23 @@ int values[NUM_READINGS];
 
 void loop()
 {
-    ReadInValues();
+    int distance = sonar.ping_cm();
+
+    if (distance == 0)
+    {
+        distance = 200; // If no echo, assume max distance
+    }
+
+    //clamp
+    if (distance > 30)
+    {
+        distance = 30;
+    }
+    distance = map(distance, 0, 30, -255, 255);
+    Drive(distance);
+    Serial.println(distance);
+    //delay(100);
+    //ReadInValues();
 }
 
 void ReadInValues()
