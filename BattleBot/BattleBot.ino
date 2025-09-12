@@ -26,6 +26,8 @@ const int TRG_PIN = 12;
 const int ECHO_PIN = 13;
 NewPing sonar(TRG_PIN, ECHO_PIN, 200);
 
+const int LINE_SENSOR_PIN = A1;
+
 const char fills[] = {' ', '_', '#', 'A'}; // Characters for visualizing light sensor values
 
 void setup()
@@ -45,7 +47,23 @@ int values[NUM_READINGS];
 
 void loop()
 {
-    int distance = sonar.ping_cm();
+    //line sensor stuff
+    //drive forward constantly
+    Forward(100);
+    //check line sensor
+    const int LINE_THRESHOLD = 870;
+    int value = analogRead(LINE_SENSOR_PIN);
+    Serial.println(value);
+    if (value > LINE_THRESHOLD)
+    {
+        //we are over the line, back up and turn
+        Backwards(100);
+        Serial.println("Line detected, backing up");
+        delay(300);
+        Turn(180, 100);
+    }
+
+/*     int distance = sonar.ping_cm();
 
     if (distance == 0)
     {
@@ -59,7 +77,8 @@ void loop()
     }
     distance = map(distance, 0, 30, -255, 255);
     Drive(distance);
-    Serial.println(distance);
+    Serial.println(distance); */
+
     //delay(100);
     //ReadInValues();
 }
