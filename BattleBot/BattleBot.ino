@@ -28,6 +28,8 @@ NewPing sonar(TRG_PIN, ECHO_PIN, 200);
 
 const int LINE_SENSOR_PIN = A1;
 
+const int BALLOON_PIN = 2;
+
 const char fills[] = {' ', '_', '#', 'A'}; // Characters for visualizing light sensor values
 
 void setup()
@@ -36,6 +38,7 @@ void setup()
 
     //setup light sensor
     pinMode(LIGHT_SENSOR_PIN, INPUT);
+    pinMode(BALLOON_PIN, INPUT);
 
     lightServo.attach(SERVO_PIN);
 
@@ -47,6 +50,9 @@ int values[NUM_READINGS];
 
 void loop()
 {
+    int val = analogRead(LIGHT_SENSOR_PIN);
+    Serial.println(val);
+    return;
     //line sensor stuff
     //drive forward constantly
     Forward(100);
