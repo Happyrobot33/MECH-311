@@ -17,7 +17,7 @@ const int STBY = 9;
 Motor leftMotor(LEFT_MOTOR_IN1, LEFT_MOTOR_IN2, LEFT_MOTOR_PWM, LEFT_MOTOR_OFFSET, STBY);
 Motor rightMotor(RIGHT_MOTOR_IN1, RIGHT_MOTOR_IN2, RIGHT_MOTOR_PWM, RIGHT_MOTOR_OFFSET, STBY);
 
-const int LIGHT_SENSOR_PIN = A0; // Analog pin for light sensor
+const int LIGHT_SENSOR_PIN = A5; // Analog pin for light sensor
 
 const int SERVO_PIN = 10;
 Servo lightServo;
@@ -28,21 +28,36 @@ NewPing sonar(TRG_PIN, ECHO_PIN, 200);
 
 const int LINE_SENSOR_PIN = A1;
 
-const int BALLOON_PIN = 2;
+const int BALLOON_PIN = A0;
 
 const char fills[] = {' ', '_', '#', 'A'}; // Characters for visualizing light sensor values
+
+bool battlemode = false;
 
 void setup()
 {
     Serial.begin(115200);
 
-    //setup light sensor
+    // setup light sensor
     pinMode(LIGHT_SENSOR_PIN, INPUT);
     pinMode(BALLOON_PIN, INPUT);
 
     lightServo.attach(SERVO_PIN);
 
     lightServo.write(180);
+
+    //determine mode based on ultrasonic distance at startup
+    delay(2000); // wait for things to settle
+    int distance = sonar.ping_cm();
+    if (distance > 0 && distance < 20)
+    {
+        //other mode
+        battlemode = false;
+    }
+    else
+    {
+        battlemode = true;
+    }
 }
 
 const int NUM_READINGS = 40; // Number of readings for averaging
@@ -50,55 +65,70 @@ int values[NUM_READINGS];
 
 void loop()
 {
-    int val = analogRead(LIGHT_SENSOR_PIN);
-    Serial.println(val);
-    return;
-    //line sensor stuff
-    //drive forward constantly
-    Forward(100);
-    //check line sensor
-    const int LINE_THRESHOLD = 870;
-    int value = analogRead(LINE_SENSOR_PIN);
-    Serial.println(value);
-    if (value > LINE_THRESHOLD)
+//    Serial.println(analogRead(BALLOON_PIN));
+//    return;
+    if (battlemode)
     {
-        //we are over the line, back up and turn
-        Backwards(100);
-        Serial.println("Line detected, backing up");
-        delay(300);
-        Turn(180, 100);
+        //spin on startup, watching for the ballon to pop
+        if (analogRead(BALLOON_PIN) >= 50)
+        {
+            //just spin real fast
+            Right(255);
+        }
+        else
+        {
+            Stop();
+        }
     }
-
-/*     int distance = sonar.ping_cm();
-
-    if (distance == 0)
+    else
     {
-        distance = 200; // If no echo, assume max distance
-    }
+        delay(100);
+        ReadInValues();
 
-    //clamp
-    if (distance > 30)
-    {
-        distance = 30;
-    }
-    distance = map(distance, 0, 30, -255, 255);
-    Drive(distance);
-    Serial.println(distance); */
+        // drive towards the light
+        // using the ultrasonic sensor
+        int distance = sonar.ping_cm();
 
-    //delay(100);
-    //ReadInValues();
+        if (distance == 0)
+        {
+            distance = 200; // If no echo, assume max distance
+        }
+
+        // clamp
+        if (distance > 30)
+        {
+            distance = 30;
+        }
+        distance = map(distance, 0, 30, -255, 255);
+        Drive(distance);
+
+        const int LINE_THRESHOLD = 870;
+        int value = analogRead(LINE_SENSOR_PIN);
+        Serial.println(value);
+        int totalDelayCounter = 0;
+        const int desiredDelay = 1000;
+        while (value < LINE_THRESHOLD && totalDelayCounter <= desiredDelay)
+        {
+            const int delayPerLoop = 1;
+            delay(delayPerLoop);
+            totalDelayCounter += delayPerLoop;
+            value = analogRead(LINE_SENSOR_PIN);
+        }
+
+        Stop();
+    }
 }
 
 void ReadInValues()
 {
-    //Turn(90, 255); // Initial turn to look for light
-    //Turn(-90, 255);
-    //return;
+    // Turn(90, 255); // Initial turn to look for light
+    // Turn(-90, 255);
+    // return;
 
     // Read multiple values from the light sensor
     for (int i = 0; i < NUM_READINGS; i++)
     {
-        //drive the servo to the scan position
+        // drive the servo to the scan position
         long rotation = map(i, 0, NUM_READINGS - 1, 180, 0);
         lightServo.write(rotation);
         delay(50);
@@ -106,38 +136,38 @@ void ReadInValues()
     }
     lightServo.write(180);
 
-    //find the min and max values
+    // find the min and max values
     int minValue;
     int maxValue;
-    int maxValueAngle;
+    int minValueAngle;
     for (int i = 0; i < NUM_READINGS; i++)
     {
         if (i == 0 || values[i] < minValue)
         {
             minValue = values[i];
+            minValueAngle = map(i, 0, NUM_READINGS - 1, 180, 0);
         }
         if (i == 0 || values[i] > maxValue)
         {
             maxValue = values[i];
-            maxValueAngle = map(i, 0, NUM_READINGS - 1, 180, 0);
         }
     }
 
-    //print out the values
+    // print out the values
     Serial.print("Light Sensor Readings:");
     Serial.println();
 
-    //remap the values to a range of 0 to 4
+    // remap the values to a range of 0 to 4
     for (int i = 0; i < NUM_READINGS; i++)
     {
         // Normalize the value to a range of 0 to 4
-        values[i] = map(values[i], minValue, maxValue, 0, 3);
+        values[i] = map(values[i], minValue, maxValue, 3, 0);
         // Print the visual representation using fills
         Serial.print(fills[values[i]]);
     }
     Serial.println();
 
-    //print indicators for left, right, and center
+    // print indicators for left, right, and center
     for (int i = 0; i < NUM_READINGS; i++)
     {
         if (i == 0)
@@ -158,24 +188,15 @@ void ReadInValues()
         }
     }
 
-    Serial.println();
+    Serial.println("Max Value: " + String(maxValue) + " at angle " + String(minValueAngle));
+    Serial.println("Min Value: " + String(minValue));
 
-    //remap the max angle to a turn angle
-    int turnAngle = map(maxValueAngle, 0, 180, 90, -90);
+        // remap the max angle to a turn angle
+    int turnAngle = map(minValueAngle, 0, 180, 90, -90);
     Turn(turnAngle, 100);
-
-    //drive towards the light
-    Drive(120);
-    delay(500);
-    Stop();
 }
 
-
-
-
-
-
-//util functions
+// util functions
 
 // Turn by a specified ammount of degrees either positive or negative by a 0 to 100 pct
 void Turn(int degrees, int speedPct)
